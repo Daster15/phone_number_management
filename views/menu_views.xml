@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Główne menu modułu -->
+    <menuitem
+        id="menu_number_management_root"
+        name="Zarządzanie Numerami"
+        sequence="10"
+        web_icon="phone_number_management,static/description/icon.png"/>
+
+    <!-- Menu dla puli numerów -->
+    <menuitem
+        id="menu_number_pool"
+        name="Pula Numerów"
+        parent="phone_number_management.menu_number_management_root"
+        action="action_number_pool"
+        sequence="10"/>
+
+    <!-- Menu dla numerów przeniesionych -->
+    <menuitem
+        id="menu_ported_numbers"
+        name="Numery Przeniesione"
+        parent="phone_number_management.menu_number_management_root"
+        action="action_ported_numbers"
+        sequence="20"/>
+
+    <!-- Menu dla numerów wyniesionych -->
+    <menuitem
+        id="menu_removed_numbers"
+        name="Numery Wyniesione"
+        parent="phone_number_management.menu_number_management_root"
+        action="action_removed_numbers"
+        sequence="30"/>
+</odoo>

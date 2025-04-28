@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_removed_numbers_tree" model="ir.ui.view">
+        <field name="name">removed.numbers.tree</field>
+        <field name="model">removed.numbers</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="number"/>
+                <field name="subscriber_name"/>
+                <field name="is_home_operator" invisible="1"/>
+                <field name="rn_number"/>
+                <field name="completion_date"/>
+                <field name="completion_type"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_removed_numbers_form" model="ir.ui.view">
+        <field name="name">removed.numbers.form</field>
+        <field name="model">removed.numbers</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="number"/>
+                            <field name="subscriber_name"/>
+                            <field name="customer_id"/>
+                        </group>
+                        <group>
+                            <field name="is_home_operator"/>
+                            <field name="rn_number"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="completion_date"/>
+                            <field name="completion_type"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_removed_numbers_search" model="ir.ui.view">
+        <field name="name">removed.numbers.search</field>
+        <field name="model">removed.numbers</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="number"/>
+                <field name="subscriber_name"/>
+                <field name="customer_id"/>
+                <field name="rn_number"/>
+                <filter string="Home Operator" name="home_operator" domain="[('is_home_operator','=',True)]"/>
+                <filter string="Removal" name="removal" domain="[('completion_type','=','removal')]"/>
+                <filter string="Return" name="return" domain="[('completion_type','=','return')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Completion Type" name="group_by_type" context="{'group_by':'completion_type'}"/>
+                    <filter string="Completion Date" name="group_by_date" context="{'group_by':'completion_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_removed_numbers" model="ir.actions.act_window">
+        <field name="name">Removed Numbers</field>
+        <field name="res_model">removed.numbers</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Item -->
+
+</odoo>

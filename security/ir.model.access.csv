@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_number_pool_user,number.pool.user,model_number_pool,base.group_user,1,1,1,0
+access_number_pool_manager,number.pool.manager,model_number_pool,base.group_system,1,1,1,1
+access_ported_numbers_user,ported.numbers.user,model_ported_numbers,base.group_user,1,1,1,0
+access_ported_numbers_manager,ported.numbers.manager,model_ported_numbers,base.group_system,1,1,1,1
+access_removed_numbers_user,removed.numbers.user,model_removed_numbers,base.group_user,1,1,1,0
+access_removed_numbers_manager,removed.numbers.manager,model_removed_numbers,base.group_system,1,1,1,1

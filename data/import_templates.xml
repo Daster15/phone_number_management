@@ -1,0 +1,20 @@
+<odoo>
+    <record id="number_pool_import_template" model="ir.ui.view">
+        <field name="name">number.pool.import.template</field>
+        <field name="model">number.pool</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="number"/>
+                <field name="source"/>
+                <field name="number_type"/>
+                <field name="reseller_id"/>
+                <field name="status"/>
+                <field name="subscriber_name"/>
+                <field name="customer_id"/>
+                <field name="reservation_date"/>
+                <field name="activation_date"/>
+                <field name="release_date"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

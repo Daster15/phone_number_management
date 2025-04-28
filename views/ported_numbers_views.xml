@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_ported_numbers_tree" model="ir.ui.view">
+        <field name="name">ported.numbers.tree</field>
+        <field name="model">ported.numbers</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="number"/>
+                <field name="subscriber_name"/>
+                <field name="donor"/>
+                <field name="porting_date"/>
+                <field name="is_active" invisible="1"/>
+                <field name="return_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_ported_numbers_form" model="ir.ui.view">
+        <field name="name">ported.numbers.form</field>
+        <field name="model">ported.numbers</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="number"/>
+                            <field name="subscriber_name"/>
+                            <field name="customer_id"/>
+                        </group>
+                        <group>
+                            <field name="identification_type"/>
+                            <field name="identification_number"/>
+                            <field name="donor"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="porting_date"/>
+                            <field name="return_date"/>
+                            <field name="is_active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_ported_numbers_search" model="ir.ui.view">
+        <field name="name">ported.numbers.search</field>
+        <field name="model">ported.numbers</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="number"/>
+                <field name="subscriber_name"/>
+                <field name="customer_id"/>
+                <field name="donor"/>
+                <filter string="Active" name="active" domain="[('is_active','=',True)]"/>
+                <filter string="Inactive" name="inactive" domain="[('is_active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Donor" name="group_by_donor" context="{'group_by':'donor'}"/>
+                    <filter string="Porting Date" name="group_by_date" context="{'group_by':'porting_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_ported_numbers" model="ir.actions.act_window">
+        <field name="name">Ported Numbers</field>
+        <field name="res_model">ported.numbers</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active':1}</field>
+    </record>
+
+
+</odoo>
