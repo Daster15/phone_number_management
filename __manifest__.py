@@ -16,13 +16,10 @@
     'data': [
         'security/security_rules.xml',
         'security/ir.model.access.csv',
-
         'views/number_pool_views.xml',
         'views/ported_numbers_views.xml',
         'views/removed_numbers_views.xml',
         'views/menu_views.xml',
-
-        'wizard/bulk_update_views.xml',
         'data/import_templates.xml',
     ],
     'demo': [],

@@ -1,18 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Tree View -->
-    <record id="view_number_pool_tree" model="ir.ui.view">
+   <record id="view_number_pool_tree" model="ir.ui.view">
         <field name="name">number.pool.tree</field>
         <field name="model">number.pool</field>
         <field name="arch" type="xml">
-            <tree>
-                <field name="number"/>
-                <field name="source"/>
-                <field name="number_type"/>
-                <field name="status"/>
-                <field name="subscriber_name"/>
-                <field name="customer_id"/>
-                <field name="reservation_date"/>
-                <field name="activation_date"/>
+            <tree decoration-success="status == 'free'"
+                  decoration-danger="status != 'free'"
+                  default_order="number asc">
+                <field name="number" string="Numer"/>
+                <field name="status" string="Status"/>
+                <field name="number_type" string="Typ"/>
+                <field name="source" string="Źródło"/>
+                <field name="customer_id" string="Właściciel" invisible="status == 'free'"/>
+                <field name="subscriber_name" string="Abonent" invisible="status == 'free'"/>
+                <field name="adescom_status" string="Status Adescom"/>
+                <field name="contract_number" string="Numer Umowy"/>
+                <field name="reseller_id" string="Reseller"/>
+                <field name="tags" widget="many2many_tags"/>
             </tree>
         </field>
     </record>
@@ -24,42 +29,54 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_reserve" string="Reserve" type="object" class="btn-primary" />
-                    <button name="action_activate" string="Activate" type="object" class="btn-primary" />
-                    <button name="action_release" string="Release" type="object" class="btn-secondary" />
-                    <button name="action_show_history" string="Show History" type="object" class="btn-default"/>
-                    <field name="status" widget="statusbar" clickable="1"/>
+                    <button name="action_release"
+                            string="Zwolnij numer"
+                            type="object"
+                            class="btn-primary"
+                            invisible="status == 'free'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="free,occupied,reserved,grace"/>
                 </header>
                 <sheet>
                     <group>
-                        <group>
-                            <field name="number"/>
-                            <field name="source"/>
-                            <field name="number_type"/>
-                            <field name="status"/>
+                        <group string="Informacje podstawowe">
+                            <field name="number" string="Numer telefonu"/>
+                            <field name="status" string="Status"/>
+                            <field name="source" string="Source"/>
+                            <field name="number_type" string="Typ"/>
+                            <field name="adescom_status" string="Status Adescom"/>
+                            <field name="tags" string="Tagi" widget="many2many_tags"/>
                         </group>
-                        <group>
-                            <field name="reseller_id"/>
-                            <field name="subscriber_name"/>
-                            <field name="customer_id"/>
+                        <group string="Właściciel i abonent">
+                            <field name="customer_id" string="Właściciel"
+                                   required="status != 'free'"/>
+                            <field name="subscriber_name" string="Abonent"
+                                   required="status != 'free'"
+                                   readonly="status == 'free'"/>
                         </group>
                     </group>
                     <group>
-                        <group>
-                            <field name="reservation_date"/>
-                            <field name="activation_date"/>
-                            <field name="release_date"/>
+                        <group string="Dane dodatkowe">
+                            <field name="nip" string="NIP"/>
+                            <field name="contract_number" string="Numer Umowy"/>
+                            <field name="order_number" string="Numer Zamówienia"/>
+                        </group>
+                        <group string="Daty">
+                            <field name="reservation_date" string="Data rezerwacji"/>
+                            <field name="activation_date" string="Data aktywacji"/>
+                            <field name="release_date" string="Data zwolnienia"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="History">
-                            <field name="history_line_ids">
+                        <page string="Uwagi">
+                            <field name="notes" string="Uwagi" placeholder="Maksymalnie 200 znaków"/>
+                        </page>
+                        <page string="Historia">
+                            <field name="history_line_ids" string="Historia zmian">
                                 <tree>
-                                    <field name="subscriber_name"/>
-                                    <field name="customer_id"/>
-                                    <field name="activation_date"/>
-                                    <field name="release_date"/>
-                                    <field name="status"/>
+                                    <field name="subscriber_name" string="Abonent"/>
+                                    <field name="customer_id" string="Właściciel"/>
+                                    <field name="activation_date" string="Data aktywacji"/>
+                                    <field name="release_date" string="Data zwolnienia"/>
                                 </tree>
                             </field>
                         </page>
@@ -75,27 +92,40 @@
         <field name="model">number.pool</field>
         <field name="arch" type="xml">
             <search>
-                <field name="number"/>
-                <field name="customer_id"/>
-                <field name="status"/>
-                <filter string="Free Numbers" name="free" domain="[('status','=','free')]"/>
-                <filter string="Reserved Numbers" name="reserved" domain="[('status','=','reserved')]"/>
-                <filter string="Occupied Numbers" name="occupied" domain="[('status','=','occupied')]"/>
-                <filter string="Grace Period" name="grace" domain="[('status','=','grace')]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Source" name="group_by_source" context="{'group_by':'source'}"/>
-                    <filter string="Type" name="group_by_type" context="{'group_by':'number_type'}"/>
-                    <filter string="Reseller" name="group_by_reseller" context="{'group_by':'reseller_id'}"/>
+                <field name="number" string="Numer"/>
+                <field name="customer_id" string="Właściciel"/>
+                <field name="subscriber_name" string="Abonent"/>
+                <field name="contract_number" string="Numer Umowy"/>
+
+                <filter string="Wolne numery" name="free" domain="[('status','=','free')]"/>
+                <filter string="Zajęte numery" name="occupied" domain="[('status','=','occupied')]"/>
+                <filter string="Zarezerwowane numery" name="reserved" domain="[('status','=','reserved')]"/>
+                <filter string="Aktywne w Adescom" name="adescom_active" domain="[('adescom_status','=','active')]"/>
+
+                <group expand="0" string="Grupuj według">
+                    <filter string="Status" name="group_by_status" context="{'group_by':'status'}"/>
+                    <filter string="Status Adescom" name="group_by_adescom" context="{'group_by':'adescom_status'}"/>
+                    <filter string="Właściciel" name="group_by_customer" context="{'group_by':'customer_id'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- Action -->
+    <!-- Window Action -->
     <record id="action_number_pool" model="ir.actions.act_window">
-        <field name="name">Number Pool</field>
+        <field name="name">Pula numerów</field>
         <field name="res_model">number.pool</field>
         <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_number_pool_tree"/>
         <field name="context">{'search_default_free':1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Brak numerów w puli. Dodaj nowy numer!
+            </p>
+        </field>
     </record>
+
+    <!-- Menu Items -->
+      <menuitem id="menu_number_pool_root" name="Zarządzanie numerami"/>
+    <menuitem id="menu_number_pool" name="Pula numerów" parent="menu_number_pool_root" action="action_number_pool"/>
 </odoo>
