@@ -1,26 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Tree View -->
-   <record id="view_number_pool_tree" model="ir.ui.view">
-        <field name="name">number.pool.tree</field>
+    <!-- Kanban View -->
+    <record id="view_number_pool_kanban" model="ir.ui.view">
+        <field name="name">number.pool.kanban</field>
         <field name="model">number.pool</field>
         <field name="arch" type="xml">
-            <tree decoration-success="status == 'free'"
-                  decoration-danger="status != 'free'"
-                  default_order="number asc">
-                <field name="number" string="Numer"/>
-                <field name="status" string="Status"/>
-                <field name="number_type" string="Typ"/>
-                <field name="source" string="Źródło"/>
-                <field name="customer_id" string="Właściciel" invisible="status == 'free'"/>
-                <field name="subscriber_name" string="Abonent" invisible="status == 'free'"/>
-                <field name="adescom_status" string="Status Adescom"/>
-                <field name="contract_number" string="Numer Umowy"/>
-                <field name="reseller_id" string="Reseller"/>
-                <field name="tags" widget="many2many_tags"/>
-            </tree>
+            <kanban default_group_by="status">
+                <field name="status"/>
+                <field name="number_type"/>
+                <field name="tags"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <field name="number"/>
+                                </div>
+                                <div>
+                                    <field name="status" widget="statusbar" statusbar_visible="free,occupied,reserved,grace"/>
+                                </div>
+                                <div t-if="record.customer_id.raw_value" class="text-muted">
+                                    <field name="customer_id"/>
+                                </div>
+                                <div t-if="record.subscriber_name.raw_value" class="text-muted">
+                                    <field name="subscriber_name"/>
+                                </div>
+                                <div>
+                                    <field name="number_type"/>
+                                </div>
+                                <div>
+                                    <field name="tags" widget="many2many_tags"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
+
+    <!-- Tree View -->
+    <record id="view_number_pool_tree" model="ir.ui.view">
+    <field name="name">number.pool.tree</field>
+    <field name="model">number.pool</field>
+    <field name="arch" type="xml">
+        <tree decoration-success="status == 'free'"
+              decoration-danger="status != 'free'"
+              default_order="number asc" multi_edit="1">
+            <field name="number" string="Numer" optional="show"/>
+            <field name="status" string="Status" optional="show"/>
+            <field name="number_type" string="Typ" optional="show"/>
+            <field name="source" string="Źródło" optional="show"/>
+            <field name="customer_id" string="Właściciel" invisible="status == 'free'" optional="show"/>
+            <field name="subscriber_name" string="Abonent" invisible="status == 'free'" optional="show"/>
+            <field name="adescom_status" string="Status Adescom" optional="show"/>
+            <field name="contract_number" string="Numer Umowy" optional="show"/>
+            <field name="reseller_id" string="Reseller" optional="show"/>
+            <field name="tags" widget="many2many_tags" optional="show"/>
+        </tree>
+    </field>
+</record>
 
     <!-- Form View -->
     <record id="view_number_pool_form" model="ir.ui.view">
@@ -115,7 +154,7 @@
     <record id="action_number_pool" model="ir.actions.act_window">
         <field name="name">Pula numerów</field>
         <field name="res_model">number.pool</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">kanban,tree,form</field>
         <field name="view_id" ref="view_number_pool_tree"/>
         <field name="context">{'search_default_free':1}</field>
         <field name="help" type="html">
@@ -126,6 +165,6 @@
     </record>
 
     <!-- Menu Items -->
-      <menuitem id="menu_number_pool_root" name="Zarządzanie numerami"/>
+    <menuitem id="menu_number_pool_root" name="Zarządzanie numerami"/>
     <menuitem id="menu_number_pool" name="Pula numerów" parent="menu_number_pool_root" action="action_number_pool"/>
 </odoo>

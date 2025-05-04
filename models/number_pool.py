@@ -11,7 +11,7 @@ class NumberPool(models.Model):
     _order = 'number'
 
     # Fields
-    number = fields.Char(string='Number', required=True, size=9, tracking=True)
+    number = fields.Char(string='Number', required=True, tracking=True, unique=True, copy=False)
     source = fields.Selection([
         ('uke', 'UKE'),
         ('plk', 'PLK'),
@@ -68,9 +68,34 @@ class NumberPool(models.Model):
     # Constraints
     @api.constrains('number')
     def _check_number_format(self):
+        min_length = 9
+        max_length = 16
+
         for record in self:
-            if not record.number.isdigit() or len(record.number) != 9:
-                raise ValidationError("Number must be 9 digits")
+            # Sprawdzenie czy wartość istnieje i czy zawiera tylko cyfry
+            if not record.number or not record.number.isdigit():
+                raise ValidationError(
+                    "Numer musi składać się wyłącznie z cyfr (0-9)"
+                )
+
+            # Sprawdzenie długości numeru
+            num_length = len(record.number)
+            if num_length < min_length or num_length > max_length:
+                raise ValidationError(
+                    f"Numer musi mieć od {min_length} do {max_length} cyfr. "
+                    f"Wprowadzono {num_length} cyfr."
+                )
+
+            # Dodatkowa weryfikacja unikalności (dla pewności)
+            duplicate = self.search([
+                ('number', '=', record.number),
+                ('id', '!=', record.id)
+            ], limit=1)
+
+            if duplicate:
+                raise ValidationError(
+                    f"Numer {record.number} już istnieje w systemie (rekord ID: {duplicate.id})"
+                )
 
     @api.constrains('reservation_date', 'activation_date', 'release_date')
     def _check_dates_consistency(self):
