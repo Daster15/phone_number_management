@@ -19,6 +19,8 @@
         'views/number_pool_views.xml',
         'views/ported_numbers_views.xml',
         'views/removed_numbers_views.xml',
+        'views/number_pool_multi_edit_wizard_form.xml',
+'views/res_partner_views.xml',
         'views/menu_views.xml',
         'data/import_templates.xml',
     ],

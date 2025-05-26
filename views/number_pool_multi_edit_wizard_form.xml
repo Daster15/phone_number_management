@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_number_pool_multi_edit_wizard_form" model="ir.ui.view">
+        <field name="name">number.pool.multi.edit.wizard.form</field>
+        <field name="model">number.pool.multi.edit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Masowa edycja numerów">
+                <sheet>
+                    <div class="alert alert-info">
+                        <field name="number_ids" widget="many2many_tags" readonly="1"/>
+                        <div>
+                            <span>Edytujesz </span>
+                            <field name="number_ids" invisible="1"/>
+                            
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Podstawowe informacje">
+                            <field name="status"/>
+                            <field name="customer_id"/>
+                            <field name="subscriber_id"/>
+                            <field name="nip"/>
+                        </group>
+                        <group string="Dane dodatkowe">
+                            <field name="contract_number"/>
+                            <field name="order_number"/>
+                            <field name="tags" widget="many2many_tags"/>
+                        </group>
+                        <group string="Daty">
+                            <field name="reservation_date"/>
+                            <field name="activation_date"/>
+                            <field name="release_date"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_apply_changes" string="Zastosuj zmiany" type="object" class="btn-primary"/>
+                    <button string="Anuluj" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

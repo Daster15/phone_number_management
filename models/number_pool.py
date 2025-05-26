@@ -9,6 +9,9 @@ class NumberPool(models.Model):
     _description = 'Phone Number Pool'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'number'
+    _sql_constraints = [
+        ('number_uniq', 'unique(number)', 'Number must be unique!'),
+    ]
 
     # Fields
     number = fields.Char(string='Number', required=True, tracking=True, unique=True, copy=False)
@@ -42,7 +45,7 @@ class NumberPool(models.Model):
     # Relationships
     reseller_id = fields.Many2one('res.partner', string='Reseller', tracking=True)
     customer_id = fields.Many2one('res.partner', string='Customer', tracking=True)
-    subscriber_name = fields.Char(string='Subscriber Name', tracking=True)
+    subscriber_id = fields.Many2one('res.partner', string='Subscriber', tracking=True)
 
     # History
     history_line_ids = fields.One2many(
@@ -64,6 +67,18 @@ class NumberPool(models.Model):
     order_number = fields.Char(string='Order Number', tracking=True)
     notes = fields.Text(string='Notes', tracking=True, size=200)
     tags = fields.Many2many('number.pool.tags', string='Tags')
+
+    def action_open_multi_edit(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Masowa edycja numerów',
+            'res_model': 'number.pool.multi.edit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_number_ids': [(6, 0, self.env.context.get('active_ids', []))],
+            }
+        }
 
     # Constraints
     @api.constrains('number')
@@ -97,6 +112,17 @@ class NumberPool(models.Model):
                     f"Numer {record.number} już istnieje w systemie (rekord ID: {duplicate.id})"
                 )
 
+    def write(self, vals):
+        for record in self:
+            old_status = record.status
+            res = super(NumberPool, record).write(vals)
+            new_status = record.status
+
+            if 'status' in vals and old_status != new_status:
+                self._create_history_record(record, new_status)
+
+        return res
+
     @api.constrains('reservation_date', 'activation_date', 'release_date')
     def _check_dates_consistency(self):
         for record in self:
@@ -117,7 +143,7 @@ class NumberPool(models.Model):
                 'status': 'reserved',
                 'reservation_date': fields.Date.today(),
                 'customer_id': self.env.context.get('default_customer_id'),
-                'subscriber_name': self.env.context.get('default_subscriber_name')
+                'subscriber_id': self.env.context.get('default_subscriber_id')
             })
             self._create_history_record(record, 'reserved')
 
@@ -140,7 +166,7 @@ class NumberPool(models.Model):
             self._create_history_record(record, 'free')
             record.write({
                 'status': 'free',
-                'subscriber_name': False,
+                'subscriber_id': False,
                 'customer_id': False,
                 'release_date': fields.Date.today(),
                 'reservation_date': False,
@@ -150,7 +176,7 @@ class NumberPool(models.Model):
     def _create_history_record(self, record, new_status):
         self.env['number.history'].create({
             'number_id': record.id,
-            'subscriber_name': record.subscriber_name,
+            'subscriber_id': record.subscriber_id.id,
             'customer_id': record.customer_id.id,
             'old_status': record.status,
             'new_status': new_status,
@@ -178,7 +204,7 @@ class NumberHistory(models.Model):
     _order = 'change_date desc'
 
     number_id = fields.Many2one('number.pool', string='Number', required=True, ondelete='cascade')
-    subscriber_name = fields.Char(string='Subscriber Name')
+    subscriber_id = fields.Many2one('res.partner', string='Subscriber')
     customer_id = fields.Many2one('res.partner', string='Customer')
 
     old_status = fields.Selection(related='number_id.status', string='Previous Status')

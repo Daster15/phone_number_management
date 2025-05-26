@@ -22,8 +22,8 @@
                                 <div t-if="record.customer_id.raw_value" class="text-muted">
                                     <field name="customer_id"/>
                                 </div>
-                                <div t-if="record.subscriber_name.raw_value" class="text-muted">
-                                    <field name="subscriber_name"/>
+                                <div t-if="record.subscriber_id.raw_value" class="text-muted">
+                                    <field name="subscriber_id"/>
                                 </div>
                                 <div>
                                     <field name="number_type"/>
@@ -47,15 +47,30 @@
         <tree decoration-success="status == 'free'"
               decoration-danger="status != 'free'"
               default_order="number asc" multi_edit="1">
+            <header>
+<button name="action_open_multi_edit"
+        string="Mass Edit"
+        type="object"
+        class="btn-secondary"
+        icon="fa-edit"
+        groups="base.group_user"
+        confirm="Czy jestem pewien że chcesz edytować wiele rekordów?"/>
+</header>
             <field name="number" string="Numer" optional="show"/>
             <field name="status" string="Status" optional="show"/>
             <field name="number_type" string="Typ" optional="show"/>
             <field name="source" string="Źródło" optional="show"/>
-            <field name="customer_id" string="Właściciel" invisible="status == 'free'" optional="show"/>
-            <field name="subscriber_name" string="Abonent" invisible="status == 'free'" optional="show"/>
+            <field name="customer_id" string="Właściciel" optional="show"/>
+            <field name="subscriber_id" string="Abonent" optional="show"/>
             <field name="adescom_status" string="Status Adescom" optional="show"/>
             <field name="contract_number" string="Numer Umowy" optional="show"/>
             <field name="reseller_id" string="Reseller" optional="show"/>
+            <field name="reservation_date" string="Data rezerwacji" optional="show"/>
+            <field name="activation_date" string="Data aktywacji" optional="show"/>
+            <field name="release_date" string="Data zwolnienia" optional="show"/>
+            <field name="nip" string="NIP" optional="show"/>
+            <field name="contract_number" string="Numer Umowy" optional="show"/>
+            <field name="order_number" string="Numer Zamówienia" optional="show"/>
             <field name="tags" widget="many2many_tags" optional="show"/>
         </tree>
     </field>
@@ -88,7 +103,7 @@
                         <group string="Właściciel i abonent">
                             <field name="customer_id" string="Właściciel"
                                    required="status != 'free'"/>
-                            <field name="subscriber_name" string="Abonent"
+                            <field name="subscriber_id" string="Abonent"
                                    required="status != 'free'"
                                    readonly="status == 'free'"/>
                         </group>
@@ -112,7 +127,10 @@
                         <page string="Historia">
                             <field name="history_line_ids" string="Historia zmian">
                                 <tree>
-                                    <field name="subscriber_name" string="Abonent"/>
+                                    <field name="change_date" string="Data zmiany"/>
+                                    <field name="old_status" string="Poprzedni status"/>
+                                    <field name="new_status" string="Nowy status"/>
+                                    <field name="subscriber_id" string="Abonent"/>
                                     <field name="customer_id" string="Właściciel"/>
                                     <field name="activation_date" string="Data aktywacji"/>
                                     <field name="release_date" string="Data zwolnienia"/>
@@ -133,7 +151,7 @@
             <search>
                 <field name="number" string="Numer"/>
                 <field name="customer_id" string="Właściciel"/>
-                <field name="subscriber_name" string="Abonent"/>
+                <field name="subscriber_id" string="Abonent"/>
                 <field name="contract_number" string="Numer Umowy"/>
 
                 <filter string="Wolne numery" name="free" domain="[('status','=','free')]"/>
@@ -146,6 +164,13 @@
                     <filter string="Status Adescom" name="group_by_adescom" context="{'group_by':'adescom_status'}"/>
                     <filter string="Właściciel" name="group_by_customer" context="{'group_by':'customer_id'}"/>
                 </group>
+
+                 <searchpanel>
+                    <field name="status" select="multi" icon="fa-filter"/>
+                    <field name="number_type" select="multi"/>
+                    <field name="source" select="multi"/>
+                </searchpanel>
+
             </search>
         </field>
     </record>
