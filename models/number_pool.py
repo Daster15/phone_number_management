@@ -113,6 +113,24 @@ class NumberPool(models.Model):
                 )
 
     def write(self, vals):
+        # Jeśli status jest ustawiany na 'free', czyść dodatkowe pola
+        if vals.get('status') == 'free':
+            fields_to_clear = {
+                'nip': False,
+                'order_number': False,
+                'contract_number': False,
+                'activation_date': False,
+                'release_date': False,
+                'reservation_date': False,
+                'customer_id': False,
+                'subscriber_id': False
+            }
+            vals.update(fields_to_clear)
+
+        return super(NumberPool, self).write(vals)
+
+
+    def write(self, vals):
         for record in self:
             old_status = record.status
             res = super(NumberPool, record).write(vals)
@@ -121,7 +139,26 @@ class NumberPool(models.Model):
             if 'status' in vals and old_status != new_status:
                 self._create_history_record(record, new_status)
 
+                # Automatyczne czyszczenie pól przy zmianie na status 'free'
+            if vals.get('status') == 'free':
+                self._clear_fields_when_free()
+
         return res
+
+    def _clear_fields_when_free(self):
+        """Czyści powiązane pola przy zmianie statusu na 'free'"""
+        fields_to_clear = {
+            'customer_id': False,
+            'subscriber_id': False,
+            'reservation_date': False,
+            'activation_date': False,
+            'release_date': fields.Date.today(),
+            'nip': False,
+            'contract_number': False,
+            'order_number': False,
+        }
+        self.write(fields_to_clear)
+
 
     @api.constrains('reservation_date', 'activation_date', 'release_date')
     def _check_dates_consistency(self):

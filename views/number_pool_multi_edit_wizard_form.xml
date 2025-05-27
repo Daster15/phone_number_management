@@ -18,19 +18,19 @@
                     <group>
                         <group string="Podstawowe informacje">
                             <field name="status"/>
-                            <field name="customer_id"/>
-                            <field name="subscriber_id"/>
-                            <field name="nip"/>
+                            <field name="customer_id" required="status != 'free'"/>
+                            <field name="subscriber_id" required="status != 'free'"/>
+                            <field name="nip" required="status != 'free'"/>
                         </group>
                         <group string="Dane dodatkowe">
-                            <field name="contract_number"/>
-                            <field name="order_number"/>
+                            <field name="contract_number" required="status != 'free'"/>
+                            <field name="order_number" required="status != 'free'"/>
                             <field name="tags" widget="many2many_tags"/>
                         </group>
                         <group string="Daty">
-                            <field name="reservation_date"/>
-                            <field name="activation_date"/>
-                            <field name="release_date"/>
+                            <field name="reservation_date" required="status != 'free'"/>
+                            <field name="activation_date" required="status != 'free'"/>
+                            <field name="release_date" required="status != 'free'"/>
                         </group>
                     </group>
                 </sheet>

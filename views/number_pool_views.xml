@@ -87,7 +87,7 @@
                             string="Zwolnij numer"
                             type="object"
                             class="btn-primary"
-                            invisible="status == 'free'"/>
+                            invisible="status == 'free' or not customer_id or not subscriber_id or not nip or not contract_number or not order_number or not reservation_date or not activation_date or not release_date"/>
                     <field name="status" widget="statusbar" statusbar_visible="free,occupied,reserved,grace"/>
                 </header>
                 <sheet>
@@ -110,14 +110,14 @@
                     </group>
                     <group>
                         <group string="Dane dodatkowe">
-                            <field name="nip" string="NIP"/>
-                            <field name="contract_number" string="Numer Umowy"/>
-                            <field name="order_number" string="Numer Zamówienia"/>
+                            <field name="nip" string="NIP" required="status != 'free'"/>
+                            <field name="contract_number" string="Numer Umowy" required="status != 'free'"/>
+                            <field name="order_number" string="Numer Zamówienia" required="status != 'free'"/>
                         </group>
                         <group string="Daty">
-                            <field name="reservation_date" string="Data rezerwacji"/>
-                            <field name="activation_date" string="Data aktywacji"/>
-                            <field name="release_date" string="Data zwolnienia"/>
+                            <field name="reservation_date" string="Data rezerwacji" required="status != 'free'"/>
+                            <field name="activation_date" string="Data aktywacji" required="status != 'free'"/>
+                            <field name="release_date" string="Data zwolnienia" required="status != 'free'"/>
                         </group>
                     </group>
                     <notebook>
