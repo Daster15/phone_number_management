@@ -1,38 +1,46 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_number_pool_multi_edit_wizard_form" model="ir.ui.view">
         <field name="name">number.pool.multi.edit.wizard.form</field>
         <field name="model">number.pool.multi.edit.wizard</field>
         <field name="arch" type="xml">
-            <form string="Masowa edycja numerów">
+            <form string="Masowa edycja numerów" class="o_form_nosheet">
                 <sheet>
-                    <div class="alert alert-info">
-                        <field name="number_ids" widget="many2many_tags" readonly="1"/>
-                        <div>
-                            <span>Edytujesz </span>
-                            <field name="number_ids" invisible="1"/>
-                            
-                        </div>
-                    </div>
-
                     <group>
-                        <group string="Podstawowe informacje">
-                            <field name="status"/>
-                            <field name="customer_id" required="status != 'free'"/>
-                            <field name="subscriber_id" required="status != 'free'"/>
-                            <field name="nip" required="status != 'free'"/>
-                        </group>
-                        <group string="Dane dodatkowe">
-                            <field name="contract_number" required="status != 'free'"/>
-                            <field name="order_number" required="status != 'free'"/>
-                            <field name="tags" widget="many2many_tags"/>
-                        </group>
-                        <group string="Daty">
-                            <field name="reservation_date" required="status != 'free'"/>
-                            <field name="activation_date" required="status != 'free'"/>
-                            <field name="release_date" required="status != 'free'"/>
-                        </group>
+                        <div class="o_form_label mb-2">Edytujesz następujące numery:</div>
+                        <field name="number_ids" mode="tree" readonly="1" nolabel="1">
+                            <tree string="Numery do edycji" decoration-muted="True">
+                                <field name="number"/>
+                                <field name="status"/>
+                                <field name="customer_id"/>
+                                <field name="subscriber_id"/>
+                            </tree>
+                        </field>
                     </group>
+
+                    <notebook>
+                        <page string="Podstawowe informacje">
+                            <group>
+                                <field name="status"/>
+                                <field name="customer_id"/>
+                                <field name="subscriber_id"/>
+                                <field name="nip"/>
+                            </group>
+                        </page>
+                        <page string="Dane dodatkowe">
+                            <group>
+                                <field name="contract_number"/>
+                                <field name="order_number"/>
+                                <field name="tags" widget="many2many_tags"/>
+                            </group>
+                        </page>
+                        <page string="Daty">
+                            <group>
+                                <field name="reservation_date"/>
+                                <field name="activation_date"/>
+                                <field name="release_date"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
                 <footer>
                     <button name="action_apply_changes" string="Zastosuj zmiany" type="object" class="btn-primary"/>

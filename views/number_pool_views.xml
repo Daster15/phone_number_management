@@ -46,7 +46,7 @@
     <field name="arch" type="xml">
         <tree decoration-success="status == 'free'"
               decoration-danger="status != 'free'"
-              default_order="number asc" multi_edit="1">
+              default_order="number asc" >
             <header>
 <button name="action_open_multi_edit"
         string="Mass Edit"
@@ -82,14 +82,7 @@
         <field name="model">number.pool</field>
         <field name="arch" type="xml">
             <form>
-                <header>
-                    <button name="action_release"
-                            string="Zwolnij numer"
-                            type="object"
-                            class="btn-primary"
-                            invisible="status == 'free' or not customer_id or not subscriber_id or not nip or not contract_number or not order_number or not reservation_date or not activation_date or not release_date"/>
-                    <field name="status" widget="statusbar" statusbar_visible="free,occupied,reserved,grace"/>
-                </header>
+
                 <sheet>
                     <group>
                         <group string="Informacje podstawowe">
@@ -102,22 +95,21 @@
                         </group>
                         <group string="Właściciel i abonent">
                             <field name="customer_id" string="Właściciel"
-                                   required="status != 'free'"/>
+                                  />
                             <field name="subscriber_id" string="Abonent"
-                                   required="status != 'free'"
-                                   readonly="status == 'free'"/>
+                                   />
                         </group>
                     </group>
                     <group>
                         <group string="Dane dodatkowe">
-                            <field name="nip" string="NIP" required="status != 'free'"/>
-                            <field name="contract_number" string="Numer Umowy" required="status != 'free'"/>
-                            <field name="order_number" string="Numer Zamówienia" required="status != 'free'"/>
+                            <field name="nip" string="NIP" />
+                            <field name="contract_number" string="Numer Umowy" />
+                            <field name="order_number" string="Numer Zamówienia" />
                         </group>
                         <group string="Daty">
-                            <field name="reservation_date" string="Data rezerwacji" required="status != 'free'"/>
-                            <field name="activation_date" string="Data aktywacji" required="status != 'free'"/>
-                            <field name="release_date" string="Data zwolnienia" required="status != 'free'"/>
+                            <field name="reservation_date" string="Data rezerwacji" />
+                            <field name="activation_date" string="Data aktywacji" />
+                            <field name="release_date" string="Data zwolnienia" />
                         </group>
                     </group>
                     <notebook>

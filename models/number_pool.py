@@ -2,6 +2,9 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
 from dateutil.relativedelta import relativedelta
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class NumberPool(models.Model):
@@ -13,8 +16,7 @@ class NumberPool(models.Model):
         ('number_uniq', 'unique(number)', 'Number must be unique!'),
     ]
 
-    # Fields
-    number = fields.Char(string='Number', required=True, tracking=True, unique=True, copy=False)
+    number = fields.Char(string='Number', required=True, tracking=True, index=True, copy=False)
     source = fields.Selection([
         ('uke', 'UKE'),
         ('plk', 'PLK'),
@@ -35,27 +37,18 @@ class NumberPool(models.Model):
         ('occupied', 'Occupied'),
         ('reserved', 'Reserved'),
         ('grace', 'Grace Period')
-    ], string='Status', default='free', tracking=True)
+    ], string='Status', default='free', tracking=True, group_expand='_read_group_status', index=True)
 
-    # Dates
-    reservation_date = fields.Date(string='Reservation Date', tracking=True)
+    reservation_date = fields.Date(string='Reservation Date', tracking=True, index=True)
     activation_date = fields.Date(string='Activation Date', tracking=True)
     release_date = fields.Date(string='Release Date', tracking=True)
 
-    # Relationships
     reseller_id = fields.Many2one('res.partner', string='Reseller', tracking=True)
     customer_id = fields.Many2one('res.partner', string='Customer', tracking=True)
     subscriber_id = fields.Many2one('res.partner', string='Subscriber', tracking=True)
 
-    # History
-    history_line_ids = fields.One2many(
-        'number.history',
-        'number_id',
-        string='History Lines',
-        readonly=True
-    )
+    history_line_ids = fields.One2many('number.history', 'number_id', string='History Lines', readonly=True)
 
-    # Additional fields
     adescom_status = fields.Selection([
         ('active', 'Active'),
         ('suspended', 'Suspended'),
@@ -68,86 +61,11 @@ class NumberPool(models.Model):
     notes = fields.Text(string='Notes', tracking=True, size=200)
     tags = fields.Many2many('number.pool.tags', string='Tags')
 
-    def action_open_multi_edit(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Masowa edycja numerów',
-            'res_model': 'number.pool.multi.edit.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_number_ids': [(6, 0, self.env.context.get('active_ids', []))],
-            }
-        }
-
-    # Constraints
-    @api.constrains('number')
-    def _check_number_format(self):
-        min_length = 9
-        max_length = 16
-
-        for record in self:
-            # Sprawdzenie czy wartość istnieje i czy zawiera tylko cyfry
-            if not record.number or not record.number.isdigit():
-                raise ValidationError(
-                    "Numer musi składać się wyłącznie z cyfr (0-9)"
-                )
-
-            # Sprawdzenie długości numeru
-            num_length = len(record.number)
-            if num_length < min_length or num_length > max_length:
-                raise ValidationError(
-                    f"Numer musi mieć od {min_length} do {max_length} cyfr. "
-                    f"Wprowadzono {num_length} cyfr."
-                )
-
-            # Dodatkowa weryfikacja unikalności (dla pewności)
-            duplicate = self.search([
-                ('number', '=', record.number),
-                ('id', '!=', record.id)
-            ], limit=1)
-
-            if duplicate:
-                raise ValidationError(
-                    f"Numer {record.number} już istnieje w systemie (rekord ID: {duplicate.id})"
-                )
-
-    def write(self, vals):
-        # Jeśli status jest ustawiany na 'free', czyść dodatkowe pola
-        if vals.get('status') == 'free':
-            fields_to_clear = {
-                'nip': False,
-                'order_number': False,
-                'contract_number': False,
-                'activation_date': False,
-                'release_date': False,
-                'reservation_date': False,
-                'customer_id': False,
-                'subscriber_id': False
-            }
-            vals.update(fields_to_clear)
-
-        return super(NumberPool, self).write(vals)
-
-
-    def write(self, vals):
-        for record in self:
-            old_status = record.status
-            res = super(NumberPool, record).write(vals)
-            new_status = record.status
-
-            if 'status' in vals and old_status != new_status:
-                self._create_history_record(record, new_status)
-
-                # Automatyczne czyszczenie pól przy zmianie na status 'free'
-            if vals.get('status') == 'free':
-                self._clear_fields_when_free()
-
-        return res
+    def _read_group_status(self, statuses, domain, order):
+        return [key for key, _ in type(self).status.selection]
 
     def _clear_fields_when_free(self):
-        """Czyści powiązane pola przy zmianie statusu na 'free'"""
-        fields_to_clear = {
+        self.write({
             'customer_id': False,
             'subscriber_id': False,
             'reservation_date': False,
@@ -156,83 +74,104 @@ class NumberPool(models.Model):
             'nip': False,
             'contract_number': False,
             'order_number': False,
-        }
-        self.write(fields_to_clear)
+            'adescom_status': False,
+            'notes': False,
+            'tags': [(5, 0, 0)],
+        })
 
+    @api.constrains('number')
+    def _check_number_format(self):
+        for rec in self:
+            if not rec.number or not rec.number.isdigit():
+                raise ValidationError("Numer musi składać się wyłącznie z cyfr (0-9)")
+            if not 9 <= len(rec.number) <= 16:
+                raise ValidationError("Numer musi mieć od 9 do 16 cyfr")
 
     @api.constrains('reservation_date', 'activation_date', 'release_date')
     def _check_dates_consistency(self):
-        for record in self:
-            if record.reservation_date and record.activation_date:
-                if record.activation_date < record.reservation_date:
-                    raise ValidationError("Activation date cannot be before reservation date")
-            if record.activation_date and record.release_date:
-                if record.release_date < record.activation_date:
-                    raise ValidationError("Release date cannot be before activation date")
+        for r in self:
+            if r.reservation_date and r.activation_date and r.activation_date < r.reservation_date:
+                raise ValidationError("Data aktywacji nie może być wcześniejsza niż data rezerwacji")
+            if r.activation_date and r.release_date and r.release_date < r.activation_date:
+                raise ValidationError("Data zwolnienia nie może być wcześniejsza niż data aktywacji")
 
-    # Actions
-    def action_reserve(self):
-        for record in self:
-            if record.status != 'free':
-                raise UserError("Only free numbers can be reserved!")
+    def _validate_status_requirements(self):
+        today = fields.Date.today()
+        one_month_ago = today - relativedelta(months=1)
+        for r in self:
+            if r.status == 'free' and (r.customer_id or r.subscriber_id):
+                raise ValidationError("Wolne numery nie mogą mieć przypisanego klienta lub abonenta")
+            if r.status == 'reserved':
+                if not r.customer_id or not r.subscriber_id or not r.reservation_date:
+                    raise ValidationError("Brak wymaganych pól dla statusu 'reserved'")
+                if r.reservation_date < one_month_ago:
+                    raise ValidationError("Data rezerwacji nie może być starsza niż 1 miesiąc")
+            if r.status == 'occupied':
+                for f in ['customer_id', 'subscriber_id', 'reservation_date', 'activation_date', 'nip', 'contract_number']:
+                    if not getattr(r, f):
+                        raise ValidationError(f"Pole '{f}' jest wymagane dla statusu 'occupied'")
+            if r.status == 'grace' and not r.release_date:
+                raise ValidationError("Pole 'Data zwolnienia' jest wymagane dla statusu 'grace'")
 
-            record.write({
-                'status': 'reserved',
-                'reservation_date': fields.Date.today(),
-                'customer_id': self.env.context.get('default_customer_id'),
-                'subscriber_id': self.env.context.get('default_subscriber_id')
-            })
-            self._create_history_record(record, 'reserved')
+    def action_open_multi_edit(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Mass Edit Numbers',
+            'res_model': 'number.pool.multi.edit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_number_ids': [(6, 0, self.ids)],
+            }
+        }
 
-    def action_activate(self):
-        for record in self:
-            if record.status not in ('free', 'reserved'):
-                raise UserError("Only free or reserved numbers can be activated!")
+    def write(self, vals):
+        for rec in self:
+            old_status = rec.status
+            new_status = vals.get('status', old_status)
 
-            record.write({
-                'status': 'occupied',
-                'activation_date': fields.Date.today()
-            })
-            self._create_history_record(record, 'occupied')
+            if old_status != new_status and new_status == 'free':
+                vals.update({
+                    'customer_id': False,
+                    'subscriber_id': False,
+                    'reservation_date': False,
+                    'activation_date': False,
+                    'release_date': False,
+                    'nip': False,
+                    'contract_number': False,
+                    'order_number': False,
+                    'adescom_status': False,
+                    'notes': False,
+                    'tags': [(5, 0, 0)],
+                })
 
-    def action_release(self):
-        for record in self:
-            if record.status == 'free':
-                raise UserError("Number is already free!")
+            res = super(NumberPool, rec).write(vals)
+            rec._validate_status_requirements()
+            rec._create_history_record(old_status, rec.status)
 
-            self._create_history_record(record, 'free')
-            record.write({
-                'status': 'free',
-                'subscriber_id': False,
-                'customer_id': False,
-                'release_date': fields.Date.today(),
-                'reservation_date': False,
-                'activation_date': False
-            })
+        return True
 
-    def _create_history_record(self, record, new_status):
+    def _create_history_record(self, old_status, new_status):
+        _logger.info("Tworzenie historii: %s -> %s dla ID %s", old_status, new_status, self.id)
         self.env['number.history'].create({
-            'number_id': record.id,
-            'subscriber_id': record.subscriber_id.id,
-            'customer_id': record.customer_id.id,
-            'old_status': record.status,
+            'number_id': self.id,
+            'subscriber_id': self.subscriber_id.id if self.subscriber_id else False,
+            'customer_id': self.customer_id.id if self.customer_id else False,
+            'old_status': old_status,
             'new_status': new_status,
             'change_date': fields.Datetime.now(),
-            'reservation_date': record.reservation_date,
-            'activation_date': record.activation_date,
-            'release_date': record.release_date,
-            'adescom_status': record.adescom_status,
-            'contract_number': record.contract_number
+            'reservation_date': self.reservation_date,
+            'activation_date': self.activation_date,
+            'release_date': self.release_date,
+            'adescom_status': self.adescom_status,
+            'contract_number': self.contract_number,
         })
 
-    # Automatic expiration of reservations
-    def _cron_expire_reservations(self):
-        expire_date = fields.Date.today() - relativedelta(months=3)
-        expired = self.search([
-            ('status', '=', 'reserved'),
-            ('reservation_date', '<', expire_date)
-        ])
-        expired.action_release()
+    def unlink(self):
+        for rec in self:
+            if rec.status != 'free':
+                raise UserError("Można usunąć tylko numery o statusie 'free'.")
+        return super().unlink()
 
 
 class NumberHistory(models.Model):
@@ -244,7 +183,13 @@ class NumberHistory(models.Model):
     subscriber_id = fields.Many2one('res.partner', string='Subscriber')
     customer_id = fields.Many2one('res.partner', string='Customer')
 
-    old_status = fields.Selection(related='number_id.status', string='Previous Status')
+    old_status = fields.Selection([
+        ('free', 'Free'),
+        ('occupied', 'Occupied'),
+        ('reserved', 'Reserved'),
+        ('grace', 'Grace Period')
+    ], string='Previous Status')
+
     new_status = fields.Selection([
         ('free', 'Free'),
         ('occupied', 'Occupied'),
