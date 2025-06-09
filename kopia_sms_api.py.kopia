@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+
+from odoo import _
+from odoo.addons.iap.tools import iap_tools
+import requests
+import json
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+class SmsApi:
+    DEFAULT_ENDPOINT = 'https://sms.api.odoo.com'
+    EXTERNAL_API_ENDPOINT = 'https://skademo.poxbox.pl/smsapi'  # To be configured in parameters
+
+    def __init__(self, env):
+        self.env = env
+        self.external_api_username = 'zadmin'
+        self.external_api_password = 'P@ssPOXskademo'
+        self.use_external_api = True
+
+    def _contact_iap(self, local_endpoint, params, timeout=15):
+        account = self.env['iap.account'].get('sms')
+        params['account_token'] = account.account_token
+        endpoint = self.env['ir.config_parameter'].sudo().get_param('sms.endpoint', self.DEFAULT_ENDPOINT)
+        return iap_tools.iap_jsonrpc(endpoint + local_endpoint, params=params, timeout=timeout)
+
+    def _contact_external_api(self, method, params, timeout=15):
+        """ Contact external SMS API """
+        if not self.external_api_username or not self.external_api_password:
+            raise Exception(_("External SMS API credentials not configured"))
+
+        base_params = {
+            'username': self.external_api_username,
+            'password': self.external_api_password,
+        }
+        base_params.update(params)
+
+        endpoint = self.env['ir.config_parameter'].sudo().get_param(
+            'sms.external_api_endpoint', self.EXTERNAL_API_ENDPOINT)
+
+        url = f"{endpoint}/{method}"
+        headers = {'Content-Type': 'application/json'}
+
+        try:
+            response = requests.post(
+                url,
+                data=json.dumps(base_params),
+                headers=headers,
+                timeout=timeout
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            _logger.error("External SMS API request failed: %s", str(e))
+            raise Exception(_("Failed to connect to external SMS service"))
+
+    def _send_sms_batch(self, messages, delivery_reports_url=False):
+        """ Send SMS using either IAP or external API based on configuration """
+        if self.use_external_api:
+            return self._send_sms_via_external_api(messages, delivery_reports_url)
+        else:
+            return self._send_sms_via_iap(messages, delivery_reports_url)
+
+    def _send_sms_via_iap(self, messages, delivery_reports_url):
+        """ Original IAP implementation """
+        return self._contact_iap('/api/sms/3/send', {
+            'messages': messages,
+            'webhook_url': delivery_reports_url,
+            'dbuuid': self.env['ir.config_parameter'].sudo().get_param('database.uuid')
+        })
+
+    def _send_sms_via_external_api(self, messages, delivery_reports_url):
+        """ New implementation for external SMS operator """
+        # Prepare messages in external API format
+        external_messages = []
+        for message in messages:
+            for number in message['numbers']:
+                external_messages.append({
+                    'destination_number': number['number'],
+                    'text': message['content'],
+                    # Add optional parameters if needed
+                    # 'source_number': 'sender_number',
+                    # 'sch_date': 'planned_date',
+                })
+
+        params = {
+            'messages': external_messages,
+            # Add optional scheduling parameters if needed
+            # 'hours_from': '08:00:00',
+            # 'hours_to': '20:00:00',
+        }
+
+        if delivery_reports_url:
+            # Configure DLR webhook if needed
+            self._configure_dlr_webhook(delivery_reports_url)
+
+        response = self._contact_external_api('send_multi_sms', params)
+
+        # Transform response to match Odoo's expected format
+        return self._transform_external_response(response)
+
+    def _configure_dlr_webhook(self, delivery_reports_url):
+        """ Configure delivery reports webhook with external provider """
+        # Implementation depends on external API capabilities
+        # This is just a placeholder showing the concept
+        try:
+            self._contact_external_api('configure_webhook', {
+                'webhook_url': delivery_reports_url,
+                'webhook_type': 'dlr'
+            })
+        except Exception as e:
+            _logger.warning("Failed to configure DLR webhook: %s", str(e))
+
+    def _transform_external_response(self, external_response):
+        """ Transform external API response to Odoo format """
+        results = []
+
+        if 'taskid' in external_response and 'msg_details' in external_response:
+            # Response from send_multi_sms
+            for msg in external_response['msg_details']:
+                results.append({
+                    'uuid': str(msg.get('smsid', '')),
+                    'state': self._map_external_status(msg.get('status', '')),
+                    'credit': msg.get('msgcost'),
+                })
+        else:
+            # Handle other response formats if needed
+            _logger.warning("Unexpected response format from external API")
+
+        return results
+
+    def _map_external_status(self, external_status):
+        """ Map external API status codes to Odoo's statuses """
+        status_mapping = {
+            'wysyłka zakończona sukcesem': 'success',
+            'wysyłka zakończona błędem': 'server_error',
+            'wiadomość zakolejkowana w SMSC': 'processing',
+            'SMSC potwierdziło wysyłkę': 'success',
+            'SMSC odrzuciło wysyłkę': 'server_error',
+            # Add more mappings as needed
+        }
+        return status_mapping.get(external_status, 'processing')
+
+    def _get_sms_api_error_messages(self):
+        """Return a mapping of errors to error messages for both IAP and external API."""
+        error_messages = {
+            'unregistered': _("You don't have an eligible IAP account."),
+            'insufficient_credit': ' '.join([_("You don't have enough credits on your IAP account."),
+                                             self._get_buy_credits_link()]),
+            'wrong_number_format': _("The number you're trying to reach is not correctly formatted."),
+            'duplicate_message': _("This SMS has been removed as the number was already used."),
+            'country_not_supported': _("The destination country is not supported."),
+            'incompatible_content': _("The content of the message violates rules applied by our providers."),
+            'registration_needed': ' '.join([_("Country-specific registration required."),
+                                             self._get_register_link()]),
+            'external_api_error': _("Error communicating with external SMS provider."),
+            'external_auth_error': _("Authentication failed with external SMS provider."),
+        }
+
+        if self.use_external_api:
+            # Add external API specific messages
+            error_messages.update({
+                'invalid_source_number': _("The source number is not valid or not authorized."),
+                'scheduling_error': _("The requested scheduling parameters are invalid."),
+            })
+
+        return error_messages
+
+    def _get_buy_credits_link(self):
+        if self.use_external_api:
+            # Link to external provider's credit purchase page
+            return '<a href="%s" target="_blank">%s</a>' % (
+                self.env['ir.config_parameter'].sudo().get_param('sms.external_credit_url', '#'),
+                _('Buy credits.')
+            )
+        else:
+            return self.env['iap.account'].sudo().get_credits_url(service_name='sms')
+
+    def _get_register_link(self):
+        if self.use_external_api:
+            # Link to external provider's registration page
+            return '<a href="%s" target="_blank">%s</a>' % (
+                self.env['ir.config_parameter'].sudo().get_param('sms.external_registration_url', '#'),
+                _('Register now.')
+            )
+        else:
+            sms_endpoint = self.env['ir.config_parameter'].sudo().get_param('sms.endpoint', self.DEFAULT_ENDPOINT)
+            sms_account_token = self.env['iap.account'].sudo().get('sms').account_token
+            return f'<a href="{sms_endpoint}/1/account?account_token={sms_account_token}" target="_blank">{_("Register now.")}</a>'
