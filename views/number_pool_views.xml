@@ -90,11 +90,12 @@
                             <field name="status" string="Status"/>
                             <field name="source" string="Source"/>
                             <field name="number_type" string="Typ"/>
+                            <field name="customer_id" string="Właściciel"/>
                             <field name="adescom_status" string="Status Adescom"/>
                             <field name="tags" string="Tagi" widget="many2many_tags"/>
                         </group>
-                        <group string="Właściciel i abonent">
-                            <field name="customer_id" string="Właściciel"
+                        <group string="Reseler i abonent">
+                            <field name="reseller_id" string="Relseler"
                                   />
                             <field name="subscriber_id" string="Abonent"
                                    />
@@ -102,7 +103,7 @@
                     </group>
                     <group>
                         <group string="Dane dodatkowe">
-                            <field name="nip" string="NIP" />
+
                             <field name="contract_number" string="Numer Umowy" />
                             <field name="order_number" string="Numer Zamówienia" />
                         </group>
@@ -155,6 +156,7 @@
                     <filter string="Status" name="group_by_status" context="{'group_by':'status'}"/>
                     <filter string="Status Adescom" name="group_by_adescom" context="{'group_by':'adescom_status'}"/>
                     <filter string="Właściciel" name="group_by_customer" context="{'group_by':'customer_id'}"/>
+                    <filter string="" name="group_by_customer" context="{'group_by':'customer_id'}"/>
                 </group>
 
                  <searchpanel>

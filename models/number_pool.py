@@ -92,22 +92,22 @@ class NumberPool(models.Model):
         for r in self:
             if r.reservation_date and r.activation_date and r.activation_date < r.reservation_date:
                 raise ValidationError("Data aktywacji nie może być wcześniejsza niż data rezerwacji")
-            if r.activation_date and r.release_date and r.release_date < r.activation_date:
-                raise ValidationError("Data zwolnienia nie może być wcześniejsza niż data aktywacji")
+           # if r.activation_date and r.release_date and r.release_date < r.activation_date:
+           #     raise ValidationError("Data zwolnienia nie może być wcześniejsza niż data aktywacji")
 
     def _validate_status_requirements(self):
         today = fields.Date.today()
         one_month_ago = today - relativedelta(months=1)
         for r in self:
-            if r.status == 'free' and (r.customer_id or r.subscriber_id):
+            if r.status == 'free' and (r.reseller_id or r.subscriber_id):
                 raise ValidationError("Wolne numery nie mogą mieć przypisanego klienta lub abonenta")
             if r.status == 'reserved':
-                if not r.customer_id or not r.subscriber_id or not r.reservation_date:
+                if not r.customer_id or not r.subscriber_id or not r.reseller_id or not r.reservation_date:
                     raise ValidationError("Brak wymaganych pól dla statusu 'reserved'")
                 if r.reservation_date < one_month_ago:
                     raise ValidationError("Data rezerwacji nie może być starsza niż 1 miesiąc")
             if r.status == 'occupied':
-                for f in ['customer_id', 'subscriber_id', 'reservation_date', 'activation_date', 'nip', 'contract_number']:
+                for f in ['customer_id', 'subscriber_id', 'subscriber_id', 'reservation_date', 'activation_date', 'contract_number']:
                     if not getattr(r, f):
                         raise ValidationError(f"Pole '{f}' jest wymagane dla statusu 'occupied'")
             if r.status == 'grace' and not r.release_date:

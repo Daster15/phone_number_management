@@ -23,7 +23,6 @@
                                 <field name="status"/>
                                 <field name="customer_id"/>
                                 <field name="subscriber_id"/>
-                                <field name="nip"/>
                             </group>
                         </page>
                         <page string="Dane dodatkowe">
