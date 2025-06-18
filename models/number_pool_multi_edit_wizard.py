@@ -22,6 +22,7 @@ class NumberPoolMultiEditWizard(models.TransientModel):
 
     customer_id = fields.Many2one('res.partner', string='Właściciel')
     subscriber_id = fields.Many2one('res.partner', string='Abonent')
+    reseller_id = fields.Many2one('res.partner', string='Reseller')
     nip = fields.Char(string='NIP')
     contract_number = fields.Char(string='Numer Umowy')
     order_number = fields.Char(string='Numer Zamówienia')

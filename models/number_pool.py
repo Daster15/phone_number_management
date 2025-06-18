@@ -68,6 +68,7 @@ class NumberPool(models.Model):
         self.write({
             'customer_id': False,
             'subscriber_id': False,
+            'reseller_id': False,
             'reservation_date': False,
             'activation_date': False,
             'release_date': fields.Date.today(),
@@ -99,15 +100,15 @@ class NumberPool(models.Model):
         today = fields.Date.today()
         one_month_ago = today - relativedelta(months=1)
         for r in self:
-            if r.status == 'free' and (r.reseller_id or r.subscriber_id):
-                raise ValidationError("Wolne numery nie mogą mieć przypisanego klienta lub abonenta")
+            #if r.status == 'free' and (r.reseller_id or r.subscriber_id):
+            #   raise ValidationError("Wolne numery nie mogą mieć przypisanego klienta lub abonenta")
             if r.status == 'reserved':
-                if not r.customer_id or not r.subscriber_id or not r.reseller_id or not r.reservation_date:
+                if  not r.subscriber_id or not r.reseller_id or not r.reservation_date:
                     raise ValidationError("Brak wymaganych pól dla statusu 'reserved'")
                 if r.reservation_date < one_month_ago:
                     raise ValidationError("Data rezerwacji nie może być starsza niż 1 miesiąc")
             if r.status == 'occupied':
-                for f in ['customer_id', 'subscriber_id', 'subscriber_id', 'reservation_date', 'activation_date', 'contract_number']:
+                for f in ['subscriber_id', 'reseller_id', 'reservation_date', 'activation_date', 'contract_number']:
                     if not getattr(r, f):
                         raise ValidationError(f"Pole '{f}' jest wymagane dla statusu 'occupied'")
             if r.status == 'grace' and not r.release_date:
@@ -134,6 +135,7 @@ class NumberPool(models.Model):
                 vals.update({
                     'customer_id': False,
                     'subscriber_id': False,
+                    'reseller_id' :False,
                     'reservation_date': False,
                     'activation_date': False,
                     'release_date': False,
@@ -157,6 +159,7 @@ class NumberPool(models.Model):
             'number_id': self.id,
             'subscriber_id': self.subscriber_id.id if self.subscriber_id else False,
             'customer_id': self.customer_id.id if self.customer_id else False,
+            'reseller_id': self.customer_id.id if self.customer_id else False,
             'old_status': old_status,
             'new_status': new_status,
             'change_date': fields.Datetime.now(),
@@ -182,6 +185,7 @@ class NumberHistory(models.Model):
     number_id = fields.Many2one('number.pool', string='Number', required=True, ondelete='cascade')
     subscriber_id = fields.Many2one('res.partner', string='Subscriber')
     customer_id = fields.Many2one('res.partner', string='Customer')
+    reseller_id = fields.Many2one('res.partner', string='Reseller')
 
     old_status = fields.Selection([
         ('free', 'Free'),

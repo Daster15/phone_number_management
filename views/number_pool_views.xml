@@ -68,7 +68,6 @@
             <field name="reservation_date" string="Data rezerwacji" optional="show"/>
             <field name="activation_date" string="Data aktywacji" optional="show"/>
             <field name="release_date" string="Data zwolnienia" optional="show"/>
-            <field name="nip" string="NIP" optional="show"/>
             <field name="contract_number" string="Numer Umowy" optional="show"/>
             <field name="order_number" string="Numer Zamówienia" optional="show"/>
             <field name="tags" widget="many2many_tags" optional="show"/>
@@ -95,7 +94,7 @@
                             <field name="tags" string="Tagi" widget="many2many_tags"/>
                         </group>
                         <group string="Reseler i abonent">
-                            <field name="reseller_id" string="Relseler"
+                            <field name="reseller_id" string="Reseller"
                                   />
                             <field name="subscriber_id" string="Abonent"
                                    />
@@ -125,6 +124,7 @@
                                     <field name="new_status" string="Nowy status"/>
                                     <field name="subscriber_id" string="Abonent"/>
                                     <field name="customer_id" string="Właściciel"/>
+                                    <field name="reseller_id" string="Reseller"/>
                                     <field name="activation_date" string="Data aktywacji"/>
                                     <field name="release_date" string="Data zwolnienia"/>
                                 </tree>

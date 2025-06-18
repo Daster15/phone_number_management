@@ -11,7 +11,7 @@
                             <tree string="Numery do edycji" decoration-muted="True">
                                 <field name="number"/>
                                 <field name="status"/>
-                                <field name="customer_id"/>
+                                <field name="reseller_id"/>
                                 <field name="subscriber_id"/>
                             </tree>
                         </field>
@@ -21,7 +21,7 @@
                         <page string="Podstawowe informacje">
                             <group>
                                 <field name="status"/>
-                                <field name="customer_id"/>
+                                <field name="reseller_id"/>
                                 <field name="subscriber_id"/>
                             </group>
                         </page>
