@@ -16,6 +16,7 @@ class NumberPool(models.Model):
         ('number_uniq', 'unique(number)', 'Number must be unique!'),
     ]
 
+
     number = fields.Char(string='Number', required=True, tracking=True, index=True, copy=False)
     source = fields.Selection([
         ('uke', 'UKE'),
@@ -60,6 +61,30 @@ class NumberPool(models.Model):
     order_number = fields.Char(string='Order Number', tracking=True)
     notes = fields.Text(string='Notes', tracking=True, size=200)
     tags = fields.Many2many('number.pool.tags', string='Tags')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        incoming_numbers = [vals.get('number') for vals in vals_list if vals.get('number')]
+        existing = self.search([('number', 'in', incoming_numbers)])
+        existing_map = {rec.number: rec for rec in existing}
+
+        to_create = []
+        result = self.env['number.pool']
+
+        for vals in vals_list:
+            num = vals.get('number')
+            rec = existing_map.get(num)
+            if rec:
+                rec.write(vals)
+                result |= rec
+            else:
+                to_create.append(vals)
+
+        if to_create:
+            new_recs = super(NumberPool, self).create(to_create)
+            result |= new_recs
+
+        return result
 
     def _read_group_status(self, statuses, domain, order):
         return [key for key, _ in type(self).status.selection]
